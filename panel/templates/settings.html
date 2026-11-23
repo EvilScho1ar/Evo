@@ -705,6 +705,9 @@
       return { link: a, title: document.getElementById(a.dataset.target) };
     }).filter(function (it) { return it.title; });
     if (!items.length) return;
+    var inApp = document.documentElement.classList.contains("in-app");
+    var scroller = inApp ? document.body : document.scrollingElement;
+    var scrollTarget = inApp ? scroller : window;
     var held = null, queued = false;
     function mark(item) {
       items.forEach(function (it) {
@@ -715,13 +718,14 @@
     function spy() {
       queued = false;
       if (held) return;
-      var line = window.innerHeight / 3, pick = items[0];
+      var height = scroller.clientHeight;
+      var top = inApp ? scroller.getBoundingClientRect().top : 0;
+      var line = top + height / 3, pick = items[0];
       items.forEach(function (it) { if (it.title.getBoundingClientRect().top <= line) pick = it; });
-      var doc = document.documentElement;
-      if (window.scrollY + window.innerHeight >= doc.scrollHeight - 2 && window.scrollY > 0) pick = items[items.length - 1];
+      if (scroller.scrollTop > 0 && scroller.scrollTop + height >= scroller.scrollHeight - 2) pick = items[items.length - 1];
       mark(pick);
     }
-    window.addEventListener("scroll", function () { if (!queued) { queued = true; requestAnimationFrame(spy); } }, { passive: true });
+    scrollTarget.addEventListener("scroll", function () { if (!queued) { queued = true; requestAnimationFrame(spy); } }, { passive: true });
     // 自己滚（滚轮、拖滚动条、键盘翻页）时放开"停在点的那一栏"
     ["wheel", "touchstart", "pointerdown", "keydown"].forEach(function (type) {
       window.addEventListener(type, function (e) {
